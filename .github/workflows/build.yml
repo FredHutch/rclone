@@ -15,7 +15,7 @@ on:
 
 jobs:
   build:
-    timeout-minutes: 60
+    #timeout-minutes: 60
     strategy:
       matrix:
         job_name: ['linux', 'mac', 'windows_amd64', 'windows_386', 'other_os', 'modules_race', 'go1.10', 'go1.11', 'go1.12']
@@ -102,6 +102,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@master
+        with:
+          path: ./src/github.com/${{ github.repository }}
 
       - name: Install Go
         uses: actions/setup-go@v1
@@ -130,10 +132,10 @@ jobs:
         run: |
           $ProgressPreference = 'SilentlyContinue'
           choco install -y winfsp zip
-          Write-Host "##vso[task.setvariable variable=CPATH]C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse"
+          Write-Host "##[set-env name=CPATH;]C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse"
           if ($env:GO_INSTALL_ARCH -eq "386") {
             choco install -y mingw --forcex86 --force
-            Write-Host "##vso[task.prependpath]C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin"
+            Write-Host "##[add-path]C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin"
           }
           # Copy mingw32-make.exe to make.exe so the same command line
           # can be used on Windows as on macOS and Linux
@@ -154,6 +156,12 @@ jobs:
           make vars
           printf "\n\nSystem environment:\n\n"
           env
+        env:
+          GOPATH: ${{ runner.workspace }}
+          GO111MODULE: ${{ matrix.modules }}
+          GOPROXY: ${{ matrix.goproxy }}
+          GOTAGS: ${{ matrix.gotags }}
+          CPATH: ${{ matrix.cpath }}
         # working-directory: '$(modulePath)'
 
       - name: Run tests
@@ -163,6 +171,7 @@ jobs:
           make quicktest
         # working-directory: '$(modulePath)'
         env:
+          GOPATH: ${{ runner.workspace }}
           GO111MODULE: ${{ matrix.modules }}
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
@@ -175,6 +184,7 @@ jobs:
           make racequicktest
         # working-directory: '$(modulePath)'
         env:
+          GOPATH: ${{ runner.workspace }}
           GO111MODULE: ${{ matrix.modules }}
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
@@ -188,6 +198,7 @@ jobs:
           make check
         # working-directory: '$(modulePath)'
         env:
+          GOPATH: ${{ runner.workspace }}
           GO111MODULE: ${{ matrix.modules }}
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
@@ -200,6 +211,7 @@ jobs:
           make
           make compile_all
         env:
+          GOPATH: ${{ runner.workspace }}
           GO111MODULE: ${{ matrix.modules }}
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
@@ -213,6 +225,7 @@ jobs:
         run: |
           make travis_beta
         env:
+          GOPATH: ${{ runner.workspace }}
           GO111MODULE: ${{ matrix.modules }}
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
