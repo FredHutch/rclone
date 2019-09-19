@@ -33,8 +33,8 @@ endif
 .PHONY: rclone test_all vars version
 
 rclone:
-	go install -v --ldflags "-s -X github.com/rclone/rclone/fs.Version=$(TAG)" $(BUILDTAGS)
-	cp -av `go env GOPATH`/bin/rclone`go env GOEXE` .
+	go build -v --ldflags "-s -X github.com/rclone/rclone/fs.Version=$(TAG)" $(BUILDTAGS)
+	cp -av rclone`go env GOEXE` `go env GOPATH`/bin/
 
 test_all:
 	go install --ldflags "-s -X github.com/rclone/rclone/fs.Version=$(TAG)" $(BUILDTAGS) github.com/rclone/rclone/fstest/test_all
