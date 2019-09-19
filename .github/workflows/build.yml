@@ -143,6 +143,7 @@ jobs:
           if ($env:GO_INSTALL_ARCH -eq "386") {
             choco install -y mingw --forcex86 --force
             Write-Host "::add-path::C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin"
+            Write-Host "::set-env name=GOARCH::386"
           }
           # Copy mingw32-make.exe to make.exe so the same command line
           # can be used on Windows as on macOS and Linux
@@ -192,7 +193,7 @@ jobs:
       - name: Deploy built binaries
         shell: bash
         run: |
-          make build_dep
+          make release_dep
           make travis_beta
         env:
           RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
