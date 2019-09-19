@@ -167,7 +167,7 @@ jobs:
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
           CPATH: ${{ matrix.cpath }}
-        if: make_quicktest
+        if: matrix.make_quicktest
 
       - name: Race test
         shell: bash
@@ -179,7 +179,7 @@ jobs:
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
           CPATH: ${{ matrix.cpath }}
-        if: make_racequicktest
+        if: matrix.make_racequicktest
 
       - name: Code quality test
         shell: bash
@@ -192,7 +192,7 @@ jobs:
           GOPROXY: ${{ matrix.goproxy }}
           GOTAGS: ${{ matrix.gotags }}
           CPATH: ${{ matrix.cpath }}
-        if: make_check
+        if: matrix.make_check
 
       - name: Compile all architectures test
         shell: bash
@@ -206,7 +206,7 @@ jobs:
           CPATH: ${{ matrix.cpath }}
           BUILD_FLAGS: ${{ matrix.build_flags }}
         # working-directory: '$(modulePath)'
-        if: make_compile_all
+        if: matrix.make_compile_all
 
       - name: Deploy built binaries
         shell: bash
@@ -221,4 +221,4 @@ jobs:
           RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
           BETA_SUBDIR: 'github_actions'  # FIXME remove when removing travis/appveyor
         # working-directory: '$(modulePath)'
-        if: make_deploy && github.head_ref == ''
+        if: matrix.make_deploy && github.head_ref == ''
