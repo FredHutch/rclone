@@ -37,13 +37,13 @@ jobs:
             go: '1.13.x'
             modules: off
             gotags: ''  # cmount doesn't work on osx travis for some reason
-            build_flags: '-include "^darwin/" -cgo'
+            build_flags: '-include "^darwin/amd64" -cgo' # FIXME 386 build
             make_quicktest: true
             make_racequicktest: true
             make_deploy: true
 
           - job_name: windows_amd64
-            os: windows-2019
+            os: windows-latest
             go: '1.13.x'
             modules: off
             build_flags: '-include "^windows/amd64" -cgo'
@@ -52,7 +52,7 @@ jobs:
             make_deploy: true
 
           - job_name: windows_386
-            os: windows-2019
+            os: windows-latest
             go: '1.13.x'
             modules: off
             go_install_arch: 386
@@ -192,6 +192,7 @@ jobs:
       - name: Deploy built binaries
         shell: bash
         run: |
+          make build_dep
           make travis_beta
         env:
           RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
