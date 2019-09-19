@@ -15,8 +15,9 @@ on:
 
 jobs:
   build:
-    #timeout-minutes: 60
+    timeout-minutes: 60
     strategy:
+      fail-fast: false
       matrix:
         job_name: ['linux', 'mac', 'windows_amd64', 'windows_386', 'other_os', 'modules_race', 'go1.10', 'go1.11', 'go1.12']
 
@@ -46,7 +47,6 @@ jobs:
             go: '1.13.x'
             modules: off
             build_flags: '-include "^windows/amd64" -cgo'
-            cpath: 'C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse'
             make_quicktest: true
             make_racequicktest: true
             make_deploy: true
@@ -57,7 +57,6 @@ jobs:
             modules: off
             go_install_arch: 386
             build_flags: '-include "^windows/386" -cgo'
-            cpath: 'C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse'
             make_quicktest: true
             make_deploy: true
 
@@ -73,7 +72,6 @@ jobs:
             os: ubuntu-latest
             go: '1.13.x'
             modules: on
-            goproxy: https://proxy.golang.org
             make_quicktest: true
             make_racequicktest: true
 
@@ -110,6 +108,15 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
+      - name: Set environment variables
+        shell: bash
+        run: |
+          echo ::set-env name=GOPATH::${{ runner.workspace }}
+          echo ::set-env name=GO111MODULE::${{ matrix.modules }}
+          echo ::set-env name=GOTAGS::${{ matrix.gotags }}
+          echo ::set-env name=BUILD_FLAGS::${{ matrix.build_flags }}
+          echo ::set-env name=GO_INSTALL_ARCH::${{ matrix.go_install_arch }}
+
       - name: Install Libraries on Linux
         shell: bash
         run: |
@@ -132,27 +139,16 @@ jobs:
         run: |
           $ProgressPreference = 'SilentlyContinue'
           choco install -y winfsp zip
-          Write-Host "##[set-env name=CPATH;]C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse"
+          Write-Host "::set-env name=CPATH::C:\Program Files\WinFsp\inc\fuse;C:\Program Files (x86)\WinFsp\inc\fuse"
           if ($env:GO_INSTALL_ARCH -eq "386") {
             choco install -y mingw --forcex86 --force
-            Write-Host "##[add-path]C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin"
+            Write-Host "::add-path::C:\\ProgramData\\chocolatey\\lib\\mingw\\tools\\install\\mingw32\\bin"
           }
           # Copy mingw32-make.exe to make.exe so the same command line
           # can be used on Windows as on macOS and Linux
           $path = (get-command mingw32-make.exe).Path
           Copy-Item -Path $path -Destination (Join-Path (Split-Path -Path $path) 'make.exe')
-        env:
-          GO_INSTALL_ARCH: ${{ matrix.go_install_arch }}
         if: matrix.os == 'windows-latest'
-
-      - name: Set environment variables
-        shell: bash
-        run: |
-          echo ::set-env name=GOPATH::${{ runner.workspace }}
-          echo ::set-env name=GO111MODULE::${{ matrix.modules }}
-          echo ::set-env name=GOPROXY::${{ matrix.goproxy }}
-          echo ::set-env name=GOTAGS::${{ matrix.gotags }}
-          echo ::set-env name=CPATH::${{ matrix.cpath }}
 
       - name: Print Go version and environment
         shell: bash
@@ -165,39 +161,18 @@ jobs:
           make vars
           printf "\n\nSystem environment:\n\n"
           env
-        env:
-          GOPATH: ${{ runner.workspace }}
-          GO111MODULE: ${{ matrix.modules }}
-          GOPROXY: ${{ matrix.goproxy }}
-          GOTAGS: ${{ matrix.gotags }}
-          CPATH: ${{ matrix.cpath }}
-        # working-directory: '$(modulePath)'
 
       - name: Run tests
         shell: bash
         run: |
           make
           make quicktest
-        # working-directory: '$(modulePath)'
-        env:
-          GOPATH: ${{ runner.workspace }}
-          GO111MODULE: ${{ matrix.modules }}
-          GOPROXY: ${{ matrix.goproxy }}
-          GOTAGS: ${{ matrix.gotags }}
-          CPATH: ${{ matrix.cpath }}
         if: matrix.make_quicktest
 
       - name: Race test
         shell: bash
         run: |
           make racequicktest
-        # working-directory: '$(modulePath)'
-        env:
-          GOPATH: ${{ runner.workspace }}
-          GO111MODULE: ${{ matrix.modules }}
-          GOPROXY: ${{ matrix.goproxy }}
-          GOTAGS: ${{ matrix.gotags }}
-          CPATH: ${{ matrix.cpath }}
         if: matrix.make_racequicktest
 
       - name: Code quality test
@@ -205,13 +180,6 @@ jobs:
         run: |
           make build_dep
           make check
-        # working-directory: '$(modulePath)'
-        env:
-          GOPATH: ${{ runner.workspace }}
-          GO111MODULE: ${{ matrix.modules }}
-          GOPROXY: ${{ matrix.goproxy }}
-          GOTAGS: ${{ matrix.gotags }}
-          CPATH: ${{ matrix.cpath }}
         if: matrix.make_check
 
       - name: Compile all architectures test
@@ -219,14 +187,6 @@ jobs:
         run: |
           make
           make compile_all
-        env:
-          GOPATH: ${{ runner.workspace }}
-          GO111MODULE: ${{ matrix.modules }}
-          GOPROXY: ${{ matrix.goproxy }}
-          GOTAGS: ${{ matrix.gotags }}
-          CPATH: ${{ matrix.cpath }}
-          BUILD_FLAGS: ${{ matrix.build_flags }}
-        # working-directory: '$(modulePath)'
         if: matrix.make_compile_all
 
       - name: Deploy built binaries
@@ -234,12 +194,6 @@ jobs:
         run: |
           make travis_beta
         env:
-          GOPATH: ${{ runner.workspace }}
-          GO111MODULE: ${{ matrix.modules }}
-          GOPROXY: ${{ matrix.goproxy }}
-          GOTAGS: ${{ matrix.gotags }}
-          CPATH: ${{ matrix.cpath }}
-          BUILD_FLAGS: ${{ matrix.build_flags }}
           RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
           BETA_SUBDIR: 'github_actions'  # FIXME remove when removing travis/appveyor
         # working-directory: '$(modulePath)'
