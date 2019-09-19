@@ -46,6 +46,7 @@ jobs:
             os: windows-latest
             go: '1.13.x'
             modules: off
+            gotags: cmount
             build_flags: '-include "^windows/amd64" -cgo'
             make_quicktest: true
             make_racequicktest: true
@@ -55,6 +56,7 @@ jobs:
             os: windows-latest
             go: '1.13.x'
             modules: off
+            gotags: cmount
             go_install_arch: 386
             build_flags: '-include "^windows/386" -cgo'
             make_quicktest: true
