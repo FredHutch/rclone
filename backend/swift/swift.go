@@ -395,6 +395,7 @@ func swiftConnection(opt *Options, name string) (*swift.Connection, error) {
 }
 
 func checkUploadChunkSize(cs fs.SizeSuffix) error {
+	fmt.Println("in checkUploadChunkSize()")
 	const minChunkSize = fs.Byte
 	if cs < minChunkSize {
 		return errors.Errorf("%s is less than %s", cs, minChunkSize)
@@ -403,6 +404,7 @@ func checkUploadChunkSize(cs fs.SizeSuffix) error {
 }
 
 func (f *Fs) setUploadChunkSize(cs fs.SizeSuffix) (old fs.SizeSuffix, err error) {
+	fmt.Println("in setUploadChunkSize")
 	err = checkUploadChunkSize(cs)
 	if err == nil {
 		old, f.opt.ChunkSize = f.opt.ChunkSize, cs
@@ -412,6 +414,8 @@ func (f *Fs) setUploadChunkSize(cs fs.SizeSuffix) (old fs.SizeSuffix, err error)
 
 // setRoot changes the root of the Fs
 func (f *Fs) setRoot(root string) {
+	fmt.Println("in setRoot()")
+	fmt.Println(root)
 	f.root = parsePath(root)
 	f.rootContainer, f.rootDirectory = bucket.Split(f.root)
 }
@@ -422,6 +426,7 @@ func (f *Fs) setRoot(root string) {
 // if noCheckContainer is set then the Fs won't check the container
 // exists before creating it.
 func NewFsWithConnection(opt *Options, name, root string, c *swift.Connection, noCheckContainer bool) (fs.Fs, error) {
+	fmt.Println("in NewFsWithConnection()")
 	f := &Fs{
 		name:             name,
 		opt:              *opt,
@@ -461,6 +466,7 @@ func NewFsWithConnection(opt *Options, name, root string, c *swift.Connection, n
 
 // NewFs constructs an Fs from the path, container:path
 func NewFs(name, root string, m configmap.Mapper) (fs.Fs, error) {
+	fmt.Println("in NewFs()")
 	// Parse config into Options struct
 	opt := new(Options)
 	err := configstruct.Set(m, opt)
@@ -483,6 +489,7 @@ func NewFs(name, root string, m configmap.Mapper) (fs.Fs, error) {
 //
 // If it can't be found it returns the error fs.ErrorObjectNotFound.
 func (f *Fs) newObjectWithInfo(remote string, info *swift.Object) (fs.Object, error) {
+	fmt.Println("in newObjectWithInfo()")
 	o := &Object{
 		fs:     f,
 		remote: remote,
@@ -512,6 +519,7 @@ func (f *Fs) newObjectWithInfo(remote string, info *swift.Object) (fs.Object, er
 // NewObject finds the Object at remote.  If it can't be found it
 // returns the error fs.ErrorObjectNotFound.
 func (f *Fs) NewObject(ctx context.Context, remote string) (fs.Object, error) {
+	fmt.Println("in NewObject()")
 	return f.newObjectWithInfo(remote, nil)
 }
 
@@ -525,6 +533,7 @@ type listFn func(remote string, object *swift.Object, isDirectory bool) error
 //
 // Set recurse to read sub directories
 func (f *Fs) listContainerRoot(container, directory, prefix string, addContainer bool, recurse bool, fn listFn) error {
+	fmt.Println("in listContainerRoot()")
 	if prefix != "" {
 		prefix += "/"
 	}
@@ -581,6 +590,7 @@ type addEntryFn func(fs.DirEntry) error
 
 // list the objects into the function supplied
 func (f *Fs) list(container, directory, prefix string, addContainer bool, recurse bool, fn addEntryFn) error {
+	fmt.Println("in list()")
 	err := f.listContainerRoot(container, directory, prefix, addContainer, recurse, func(remote string, object *swift.Object, isDirectory bool) (err error) {
 		if isDirectory {
 			remote = strings.TrimRight(remote, "/")
@@ -607,6 +617,7 @@ func (f *Fs) list(container, directory, prefix string, addContainer bool, recurs
 
 // listDir lists a single directory
 func (f *Fs) listDir(container, directory, prefix string, addContainer bool) (entries fs.DirEntries, err error) {
+	fmt.Println("in listDir()")
 	if container == "" {
 		return nil, fs.ErrorListBucketRequired
 	}
@@ -625,6 +636,7 @@ func (f *Fs) listDir(container, directory, prefix string, addContainer bool) (en
 
 // listContainers lists the containers
 func (f *Fs) listContainers(ctx context.Context) (entries fs.DirEntries, err error) {
+	fmt.Println("in listContainers()")
 	var containers []swift.Container
 	err = f.pacer.Call(func() (bool, error) {
 		containers, err = f.c.ContainersAll(nil)
@@ -651,6 +663,7 @@ func (f *Fs) listContainers(ctx context.Context) (entries fs.DirEntries, err err
 // This should return ErrDirNotFound if the directory isn't
 // found.
 func (f *Fs) List(ctx context.Context, dir string) (entries fs.DirEntries, err error) {
+	fmt.Println("in List() method")
 	container, directory := f.split(dir)
 	if container == "" {
 		if directory != "" {
@@ -678,6 +691,7 @@ func (f *Fs) List(ctx context.Context, dir string) (entries fs.DirEntries, err e
 // Don't implement this unless you have a more efficient way
 // of listing recursively than doing a directory traversal.
 func (f *Fs) ListR(ctx context.Context, dir string, callback fs.ListRCallback) (err error) {
+	fmt.Println("in ListR")
 	container, directory := f.split(dir)
 	list := walk.NewListRHelper(callback)
 	listR := func(container, directory, prefix string, addContainer bool) error {
@@ -716,6 +730,7 @@ func (f *Fs) ListR(ctx context.Context, dir string, callback fs.ListRCallback) (
 
 // About gets quota information
 func (f *Fs) About(ctx context.Context) (*fs.Usage, error) {
+	fmt.Println("in About()")
 	var containers []swift.Container
 	var err error
 	err = f.pacer.Call(func() (bool, error) {
@@ -744,6 +759,7 @@ func (f *Fs) About(ctx context.Context) (*fs.Usage, error) {
 // The new object may have been created if an error is returned
 func (f *Fs) Put(ctx context.Context, in io.Reader, src fs.ObjectInfo, options ...fs.OpenOption) (fs.Object, error) {
 	// Temporary Object under construction
+	fmt.Println("in Put() method")
 	fs := &Object{
 		fs:      f,
 		remote:  src.Remote(),
@@ -754,17 +770,20 @@ func (f *Fs) Put(ctx context.Context, in io.Reader, src fs.ObjectInfo, options .
 
 // PutStream uploads to the remote path with the modTime given of indeterminate size
 func (f *Fs) PutStream(ctx context.Context, in io.Reader, src fs.ObjectInfo, options ...fs.OpenOption) (fs.Object, error) {
+	fmt.Println("in PutStream()")
 	return f.Put(ctx, in, src, options...)
 }
 
 // Mkdir creates the container if it doesn't exist
 func (f *Fs) Mkdir(ctx context.Context, dir string) error {
+	fmt.Println("in Mkdir()")
 	container, _ := f.split(dir)
 	return f.makeContainer(ctx, container)
 }
 
 // makeContainer creates the container if it doesn't exist
 func (f *Fs) makeContainer(ctx context.Context, container string) error {
+	fmt.Println("in makeContainer()")
 	return f.cache.Create(container, func() error {
 		// Check to see if container exists first
 		var err error = swift.ContainerNotFound
@@ -796,6 +815,7 @@ func (f *Fs) makeContainer(ctx context.Context, container string) error {
 //
 // Returns an error if it isn't empty
 func (f *Fs) Rmdir(ctx context.Context, dir string) error {
+	fmt.Println("in Rmdir()")
 	container, directory := f.split(dir)
 	if container == "" || directory != "" {
 		return nil
@@ -815,6 +835,7 @@ func (f *Fs) Rmdir(ctx context.Context, dir string) error {
 
 // Precision of the remote
 func (f *Fs) Precision() time.Duration {
+	fmt.Println("in Precision()")
 	return time.Nanosecond
 }
 
@@ -822,6 +843,7 @@ func (f *Fs) Precision() time.Duration {
 //
 // Implemented here so we can make sure we delete directory markers
 func (f *Fs) Purge(ctx context.Context) error {
+	fmt.Println("in Purge()")
 	// Delete all the files including the directory markers
 	toBeDeleted := make(chan fs.Object, fs.Config.Transfers)
 	delErr := make(chan error, 1)
@@ -855,6 +877,7 @@ func (f *Fs) Purge(ctx context.Context) error {
 //
 // If it isn't possible then return fs.ErrorCantCopy
 func (f *Fs) Copy(ctx context.Context, src fs.Object, remote string) (fs.Object, error) {
+	fmt.Println("in Copy()")
 	dstContainer, dstPath := f.split(remote)
 	err := f.makeContainer(ctx, dstContainer)
 	if err != nil {
@@ -879,6 +902,7 @@ func (f *Fs) Copy(ctx context.Context, src fs.Object, remote string) (fs.Object,
 
 // Hashes returns the supported hash sets.
 func (f *Fs) Hashes() hash.Set {
+	fmt.Println("in Hashes()")
 	return hash.Set(hash.MD5)
 }
 
@@ -886,11 +910,13 @@ func (f *Fs) Hashes() hash.Set {
 
 // Fs returns the parent Fs
 func (o *Object) Fs() fs.Info {
+	fmt.Println("in Fs()")
 	return o.fs
 }
 
 // Return a string version
 func (o *Object) String() string {
+	fmt.Println("in String()")
 	if o == nil {
 		return "<nil>"
 	}
@@ -899,11 +925,13 @@ func (o *Object) String() string {
 
 // Remote returns the remote path
 func (o *Object) Remote() string {
+	fmt.Println("in Remote()")
 	return o.remote
 }
 
 // Hash returns the Md5sum of an object returning a lowercase hex string
 func (o *Object) Hash(ctx context.Context, t hash.Type) (string, error) {
+	fmt.Println("in Hash()")
 	if t != hash.MD5 {
 		return "", hash.ErrUnsupported
 	}
@@ -925,6 +953,7 @@ func (o *Object) Hash(ctx context.Context, t hash.Type) (string, error) {
 // hasHeader checks for the header passed in returning false if the
 // object isn't found.
 func (o *Object) hasHeader(header string) (bool, error) {
+	fmt.Println("in hasHeader()")
 	err := o.readMetaData()
 	if err != nil {
 		if err == fs.ErrorObjectNotFound {
@@ -938,16 +967,19 @@ func (o *Object) hasHeader(header string) (bool, error) {
 
 // isDynamicLargeObject checks for X-Object-Manifest header
 func (o *Object) isDynamicLargeObject() (bool, error) {
+	fmt.Println("in isDynamicLargeObject()")
 	return o.hasHeader("X-Object-Manifest")
 }
 
 // isStaticLargeObjectFile checks for the X-Static-Large-Object header
 func (o *Object) isStaticLargeObject() (bool, error) {
+	fmt.Println("in isStaticLargeObject()")
 	return o.hasHeader("X-Static-Large-Object")
 }
 
 // Size returns the size of an object in bytes
 func (o *Object) Size() int64 {
+	fmt.Println("in Size()")
 	return o.size
 }
 
@@ -959,6 +991,7 @@ func (o *Object) Size() int64 {
 //  o.md5
 //  o.contentType
 func (o *Object) decodeMetaData(info *swift.Object) (err error) {
+	fmt.Println("in decodeMetaData()")
 	o.lastModified = info.LastModified
 	o.size = info.Bytes
 	o.md5 = info.Hash
@@ -972,6 +1005,7 @@ func (o *Object) decodeMetaData(info *swift.Object) (err error) {
 //
 // it returns fs.ErrorObjectNotFound if the object isn't found
 func (o *Object) readMetaData() (err error) {
+	fmt.Println("in readMetaData()")
 	if o.headers != nil {
 		return nil
 	}
@@ -1002,6 +1036,7 @@ func (o *Object) readMetaData() (err error) {
 // It attempts to read the objects mtime and if that isn't present the
 // LastModified returned in the http headers
 func (o *Object) ModTime(ctx context.Context) time.Time {
+	fmt.Println("in ModTime()")
 	if fs.Config.UseServerModTime {
 		return o.lastModified
 	}
@@ -1020,6 +1055,7 @@ func (o *Object) ModTime(ctx context.Context) time.Time {
 
 // SetModTime sets the modification time of the local fs object
 func (o *Object) SetModTime(ctx context.Context, modTime time.Time) error {
+	fmt.Println("in SetModTime()")
 	err := o.readMetaData()
 	if err != nil {
 		return err
@@ -1048,11 +1084,13 @@ func (o *Object) SetModTime(ctx context.Context, modTime time.Time) error {
 // It compares the Content-Type to directoryMarkerContentType - that
 // makes it a directory marker which is not storable.
 func (o *Object) Storable() bool {
+	fmt.Println("in Storable()")
 	return o.contentType != directoryMarkerContentType
 }
 
 // Open an object for read
 func (o *Object) Open(ctx context.Context, options ...fs.OpenOption) (in io.ReadCloser, err error) {
+	fmt.Println("in Open()")
 	fs.FixRangeOption(options, o.size)
 	headers := fs.OpenOptionHeaders(options)
 	_, isRanging := headers["Range"]
@@ -1067,6 +1105,7 @@ func (o *Object) Open(ctx context.Context, options ...fs.OpenOption) (in io.Read
 
 // min returns the smallest of x, y
 func min(x, y int64) int64 {
+	fmt.Println("in min()")
 	if x < y {
 		return x
 	}
@@ -1077,6 +1116,7 @@ func min(x, y int64) int64 {
 //
 // if except is passed in then segments with that prefix won't be deleted
 func (o *Object) removeSegments(except string) error {
+	fmt.Println("in removeSegments()")
 	container, containerPath := o.split()
 	segmentsContainer := container + "_segments"
 	err := o.fs.listContainerRoot(segmentsContainer, containerPath, "", false, true, func(remote string, object *swift.Object, isDirectory bool) error {
@@ -1113,6 +1153,7 @@ func (o *Object) removeSegments(except string) error {
 // We don't use any of Go's standard methods as we need `/` not
 // encoded but we need '&' encoded.
 func urlEncode(str string) string {
+	fmt.Println("in urlEncode()")
 	var buf bytes.Buffer
 	for i := 0; i < len(str); i++ {
 		c := str[i]
@@ -1128,28 +1169,30 @@ func urlEncode(str string) string {
 // updateChunks updates the existing object using chunks to a separate
 // container.  It returns a string which prefixes current segments.
 func (o *Object) updateChunks(in0 io.Reader, headers swift.Headers, size int64, contentType string) (string, error) {
+	fmt.Println("in updateChunks()")
+	fmt.Println("in updateChunks() method")
 	container, containerPath := o.split()
-	segmentsContainer := container + "_segments"
+	segmentsContainer := container // + "_segments"
 	// Create the segmentsContainer if it doesn't exist
 	var err error
-	err = o.fs.pacer.Call(func() (bool, error) {
-		var rxHeaders swift.Headers
-		_, rxHeaders, err = o.fs.c.Container(segmentsContainer)
-		return shouldRetryHeaders(rxHeaders, err)
-	})
-	if err == swift.ContainerNotFound {
-		headers := swift.Headers{}
-		if o.fs.opt.StoragePolicy != "" {
-			headers["X-Storage-Policy"] = o.fs.opt.StoragePolicy
-		}
-		err = o.fs.pacer.Call(func() (bool, error) {
-			err = o.fs.c.ContainerCreate(segmentsContainer, headers)
-			return shouldRetry(err)
-		})
-	}
-	if err != nil {
-		return "", err
-	}
+	// err = o.fs.pacer.Call(func() (bool, error) {
+	// 	var rxHeaders swift.Headers
+	// 	_, rxHeaders, err = o.fs.c.Container(segmentsContainer)
+	// 	return shouldRetryHeaders(rxHeaders, err)
+	// })
+	// if err == swift.ContainerNotFound {
+	// 	headers := swift.Headers{}
+	// 	if o.fs.opt.StoragePolicy != "" {
+	// 		headers["X-Storage-Policy"] = o.fs.opt.StoragePolicy
+	// 	}
+	// 	err = o.fs.pacer.Call(func() (bool, error) {
+	// 		err = o.fs.c.ContainerCreate(segmentsContainer, headers)
+	// 		return shouldRetry(err)
+	// 	})
+	// }
+	// if err != nil {
+	// 	return "", err
+	// }
 	// Upload the chunks
 	left := size
 	i := 0
@@ -1207,6 +1250,7 @@ func (o *Object) updateChunks(in0 io.Reader, headers swift.Headers, size int64, 
 }
 
 func deleteChunks(o *Object, segmentsContainer string, segmentInfos []string) {
+	fmt.Println("in deleteChunks()")
 	if segmentInfos != nil && len(segmentInfos) > 0 {
 		for _, v := range segmentInfos {
 			fs.Debugf(o, "Delete segment file %q on %q", v, segmentsContainer)
@@ -1222,6 +1266,7 @@ func deleteChunks(o *Object, segmentsContainer string, segmentInfos []string) {
 //
 // The new object may have been created if an error is returned
 func (o *Object) Update(ctx context.Context, in io.Reader, src fs.ObjectInfo, options ...fs.OpenOption) error {
+	fmt.Println("in Update() method")
 	container, containerPath := o.split()
 	if container == "" {
 		return fserrors.FatalError(errors.New("can't upload files to the root"))
@@ -1295,6 +1340,7 @@ func (o *Object) Update(ctx context.Context, in io.Reader, src fs.ObjectInfo, op
 
 // Remove an object
 func (o *Object) Remove(ctx context.Context) error {
+	fmt.Println("in Remove()")
 	container, containerPath := o.split()
 	isDynamicLargeObject, err := o.isDynamicLargeObject()
 	if err != nil {
@@ -1320,6 +1366,7 @@ func (o *Object) Remove(ctx context.Context) error {
 
 // MimeType of an Object if known, "" otherwise
 func (o *Object) MimeType(ctx context.Context) string {
+	fmt.Println("in MimeType()")
 	return o.contentType
 }
 
