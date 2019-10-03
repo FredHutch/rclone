@@ -1197,7 +1197,8 @@ func (o *Object) updateChunks(in0 io.Reader, headers swift.Headers, size int64, 
 	left := size
 	i := 0
 	uniquePrefix := fmt.Sprintf("%s/%d", swift.TimeToFloatString(time.Now()), size)
-	segmentsPath := path.Join(containerPath, uniquePrefix)
+	// vvvv
+	segmentsPath := path.Join(".segments", "slo", containerPath, uniquePrefix)
 	in := bufio.NewReader(in0)
 	segmentInfos := make([]string, 0, ((size / int64(o.fs.opt.ChunkSize)) + 1))
 	for {
