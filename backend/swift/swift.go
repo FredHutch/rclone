@@ -467,21 +467,29 @@ func NewFsWithConnection(opt *Options, name, root string, c *swift.Connection, n
 // NewFs constructs an Fs from the path, container:path
 func NewFs(name, root string, m configmap.Mapper) (fs.Fs, error) {
 	fmt.Println("in NewFs()")
+
 	// Parse config into Options struct
 	opt := new(Options)
 	err := configstruct.Set(m, opt)
+	fmt.Println("before err 1")
 	if err != nil {
 		return nil, err
 	}
 	err = checkUploadChunkSize(opt.ChunkSize)
+	fmt.Println("before err 2")
 	if err != nil {
 		return nil, errors.Wrap(err, "swift: chunk size")
 	}
 
 	c, err := swiftConnection(opt, name)
+	fmt.Println("before err 3 opt is ", opt, " name is ", name)
+	fs.Debugf(nil, "a plaque", root, m, name, opt)
 	if err != nil {
+		fs.Debugf(nil, "plok", err)
 		return nil, err
 	}
+	fmt.Println("after error 3")
+	fmt.Println("there is a flyway in fort collins")
 	return NewFsWithConnection(opt, name, root, c, false)
 }
 
